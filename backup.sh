@@ -25,7 +25,9 @@ function backup() {
   find "$backup_folder1" -type f -mtime +1 -delete
 
   # Відправляємо резервну копію на інший сервер
-  rsync -a --delete --exclude=*.sh --exclude=README.md --exclude=.git ./ root@192.168.81.136:~/.backups
+  if [ "$frequency" == "daily" ]; then
+    rsync -a --delete --exclude=*.sh --exclude=README.md --exclude=.git ./ root@192.168.81.136:~/.backups
+  fi
 }
 
 # Визначаємо частоту резервної копії
@@ -48,9 +50,12 @@ case "$frequency" in
     ;;
 esac
 
-# Приклад того, як ви налаштувати cron-графік для цього скрипта:
-# 0 0 * * * sh /root/.backups/backup.sh daily
-# 0 0 * * 0 sh /root/.backups/backup.sh weekly
-# 0 0 1 * * sh /root/.backups/backup.sh monthly
-# Цей графік запускає скрипт backup.sh щодня о 00:00, щотижня о 00:00 у неділю
-# та щомісяця о 00:00 1-го числа.
+# m h  dom mon dow   command
+# Запускатиметься о 00:15 годин 1 числа кожного місяця.
+# 15 0 1 * * sh /root/.backups/backup.sh monthly
+
+# Запускатиметься о 00:25 годин щонеділі (день тижня 0 в cron означає неділю).
+# 25 0 * * 0 sh /root/.backups/backup.sh weekly
+
+# Запускатиметься о 00:35 кожного дня.
+# 35 0 * * * sh /root/.backups/backup.sh daily
