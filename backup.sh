@@ -8,31 +8,45 @@ function backup() {
   # Визначаємо дату та час резервної копії
   date=$(date +"%d-%m-%Y_%H-%M-%S")
 
-  # Створюємо папку резервної копії, якщо вона не існує
-  mkdir -p ~/.backups/project_name/${frequency}
-  mkdir -p ~/.backups/project_name1/${frequency}
-  mkdir -p ~/.backups/project_name2/${frequency}
-
+  # Створюємо папку резервної копії для 1 проекту, якщо вона не існує
+  backup_folder=~/.backups/project_name/${frequency}
+  mkdir -p "$backup_folder"
   # Створюємо резервну копію
-  tar -zcf ~/.backups/project_name/${frequency}/backup-${date}.tar.gz -C /home/a3888s/code/ project
-  tar -zcf ~/.backups/project_name1/${frequency}/backup-${date}.tar.gz -C /home/a3888s/code/ project
-  tar -zcf ~/.backups/project_name2/${frequency}/backup-${date}.tar.gz -C /home/a3888s/code/ project
+  tar -zcf "$backup_folder"/backup-"${date}".tar.gz -C /home/a3888s/code/ project
+  # Видаляємо файли, які старші за 1 день
+  find "$backup_folder" -type f -mtime +1 -delete
+
+  # Створюємо папку резервної копії для 2 проекту, якщо вона не існує
+  backup_folder1=~/.backups/project_name1/${frequency}
+  mkdir -p "$backup_folder1"
+  # Створюємо резервну копію
+  tar -zcf "$backup_folder1"/backup-"${date}".tar.gz -C /home/a3888s/code/ project
+  # Видаляємо файли, які старші за 1 день
+  find "$backup_folder1" -type f -mtime +1 -delete
 
   # Відправляємо резервну копію на інший сервер
   rsync -a --delete --exclude=*.sh --exclude=README.md --exclude=.git ./ root@192.168.81.136:~/.backups
 }
 
-# Створюємо резервну копію щодня
-backup daily
+# Визначаємо частоту резервної копії
+frequency="$1"
 
-# Створюємо резервну копію щотижня
-backup weekly
-
-# Створюємо резервну копію щомісяця
-backup monthly
-
-# Видаляємо резервні копії, які старші ніж 1 днів
-find ~/.backups/project_name/* -mtime +1 -delete
+# Перевіряємо частоту та викликаємо функцію
+case "$frequency" in
+  daily)
+    backup daily
+    ;;
+  weekly)
+    backup weekly
+    ;;
+  monthly)
+    backup monthly
+    ;;
+  *)
+    echo "Невірна частота. Використовуйте: daily, weekly або monthly."
+    exit 1
+    ;;
+esac
 
 # Приклад того, як ви налаштувати cron-графік для цього скрипта:
 # 0 0 * * * sh /root/.backups/backup.sh daily
